@@ -45,6 +45,8 @@ public class HomeKeyService extends AccessibilityService {
     /** Remote buttons that should open Settings (config.xml, settings_key_scancodes and settings_key_keycodes). */
     private int[] settingsScancodes = new int[0];
     private int[] settingsKeycodes = new int[0];
+    /** Device-specific scancodes that the firmware maps to vendor keycodes instead of KEYCODE_HOME. */
+    private int[] homeScancodes = new int[0];
     private boolean settingsPanel;
     /** app_keys, the same maps InputKeyService reads, for setups that run only this service. */
     private Map<Integer, String> appKeys = Collections.emptyMap();
@@ -63,10 +65,15 @@ public class HomeKeyService extends AccessibilityService {
     protected void onServiceConnected() {
         super.onServiceConnected();
         settingsScancodes = getResources().getIntArray(R.array.settings_key_scancodes);
+        homeScancodes = getResources().getIntArray(R.array.home_key_scancodes);
         // The service is directBootAware: Android 11 skips a service that is not while the user is still
         // locked at boot, writes accessibility_enabled=0 and, on TCL G03 firmware, never binds it after the
         // unlock. Config.load reads credential-protected storage, so wait for the unlock before reading it.
-        UserManager users = getSystemService(UserManager.class);
+        if (android.os.Build.VERSION.SDK_INT < 24) {
+            loadConfig();
+            return;
+        }
+        UserManager users = (UserManager) getSystemService(Context.USER_SERVICE);
         if (users.isUserUnlocked()) {
             loadConfig();
             return;
@@ -165,6 +172,10 @@ public class HomeKeyService extends AccessibilityService {
             redirectHomeKey(event);
             return false;
         }
+        if (isHomeScancode(event.getScanCode(), homeScancodes)) {
+            if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) openHome();
+            return true;
+        }
         if (event.getKeyCode() != KeyEvent.KEYCODE_ALL_APPS) return false;
         if (event.getAction() == KeyEvent.ACTION_UP && !event.isCanceled()) {
             Intent home = new Intent(Intent.ACTION_MAIN)
@@ -232,6 +243,11 @@ public class HomeKeyService extends AccessibilityService {
 
     static boolean isShortPress(long downTime, long upTime, long longPressTimeout) {
         return upTime - downTime < longPressTimeout;
+    }
+
+    static boolean isHomeScancode(int scanCode, int[] configuredScancodes) {
+        for (int configured : configuredScancodes) if (scanCode == configured) return true;
+        return false;
     }
 
     private void openHome() {

@@ -2,6 +2,9 @@ plugins {
     id 'com.android.application'
 }
 
+// Local Android 5 compatibility build: pass -PlegacyAndroid=true.
+def legacyAndroid = providers.gradleProperty('legacyAndroid').map { it.toBoolean() }.getOrElse(false)
+
 android {
     namespace 'com.gathin.tvhome'
     compileSdk 34
@@ -10,6 +13,7 @@ android {
         // Opt-in identity for firmware with a package-name HOME allowlist; see docs/devices/xiaomi-mitv-aetp0-dofus.md.
         applicationId providers.gradleProperty('launcherApplicationId').getOrElse('com.gathin.tvhome')
         minSdk 26
+        if (legacyAndroid) minSdk 21
         targetSdk 34
         versionCode 8
         versionName '2.7'
@@ -35,12 +39,14 @@ android {
     }
 
     compileOptions {
+        coreLibraryDesugaringEnabled legacyAndroid
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
 }
 
 dependencies {
+    if (legacyAndroid) coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.5'
     implementation 'androidx.recyclerview:recyclerview:1.3.2'
     implementation 'androidx.dynamicanimation:dynamicanimation:1.0.0'
     // Test only (never in the APK): plain JVM tests for the module card validators, src/test.

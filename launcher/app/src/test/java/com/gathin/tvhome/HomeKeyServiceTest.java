@@ -32,4 +32,10 @@ public class HomeKeyServiceTest {
     @Test public void noBootCountMeansNoProbe() {
         assertFalse(HomeKeyService.firstBindAfterBoot(-1, -1, SOON));
     }
+
+    @Test public void configuredVendorHomeScancodeMatchesOnlyThatButton() {
+        assertTrue(HomeKeyService.isHomeScancode(102, new int[] {102}));
+        assertFalse(HomeKeyService.isHomeScancode(158, new int[] {102}));
+        assertFalse(HomeKeyService.isHomeScancode(102, new int[0]));
+    }
 }

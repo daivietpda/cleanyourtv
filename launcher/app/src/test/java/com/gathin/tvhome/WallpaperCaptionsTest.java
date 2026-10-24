@@ -4,12 +4,39 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Map;
 
 import org.junit.Test;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
 
 public class WallpaperCaptionsTest {
+    @Rule public TemporaryFolder temporary = new TemporaryFolder();
+
+    @Test
+    public void readsUtf8FileWithWindowsLineEndings() throws Exception {
+        File folder = temporary.newFolder();
+        File file = new File(folder, WallpaperCaptions.FILE_NAME);
+        try (FileOutputStream out = new FileOutputStream(file)) {
+            out.write("one.jpg\tBầu trời\r\ntwo.jpg\tĐêm".getBytes(StandardCharsets.UTF_8));
+        }
+        Map<String, String> names = WallpaperCaptions.read(folder);
+        assertEquals("Bầu trời", names.get("one.jpg"));
+        assertEquals("Đêm", names.get("two.jpg"));
+    }
+
+    @Test
+    public void rejectsInvalidUtf8File() throws Exception {
+        File folder = temporary.newFolder();
+        try (FileOutputStream out = new FileOutputStream(new File(folder, WallpaperCaptions.FILE_NAME))) {
+            out.write(new byte[] { (byte) 0xC3, (byte) 0x28 });
+        }
+        assertTrue(WallpaperCaptions.read(folder).isEmpty());
+    }
 
     @Test
     public void readsFilenameTabName() {
