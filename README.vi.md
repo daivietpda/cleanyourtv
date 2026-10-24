@@ -180,6 +180,9 @@ brew install openjdk@17 android-commandlinetools
 sdkmanager "platforms;android-34" "build-tools;34.0.0"
 ```
 
+Để build nhánh tương thích thử nghiệm cho Android 5, xem [hướng dẫn Android 5](docs/android5.md). Bản build này dùng
+nhánh riêng và không thay đổi `minSdk` của build thông thường.
+
 Trên Linux, script cài đặt tìm SDK ở `~/Android/Sdk` và Java trong `PATH`. Chuẩn bị xong thì chạy:
 
 ```bash
